@@ -1,47 +1,82 @@
-"""Question 1: Are Django signals executed synchronously or asynchronously by default?
+"""
+Question 1: 
+    Are Django signals executed synchronously or asynchronously by default?
 
-Answer: Django signals are executed synchronously by default. This means that the code in the signal handlers runs immediately after the signal is triggered, and the calling function will wait until the signal handlers have completed before continuing.
-Code Snippet:
+Answer: 
+    Django signals are executed synchronously by default. This means that the code in the signal handlers runs immediately 
+    after the signal is triggered, and the calling function will wait until the signal handlers have completed before continuing.
+    Code Snippet:
 
-Here’s a simple example that demonstrates synchronous execution:"""
+Here’s a simple example that demonstrates synchronous execution for a pizza delivery
+"""
 
-import time
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.contrib.auth.models import User
+# Step 1: Define the custom signal
+pizza_ordered = Signal()
 
-# Define a signal handler that introduces a delay
-@receiver(post_save, sender=User)
-def my_signal_handler(sender, instance, **kwargs):
+# Step 2: Define the signal handler (receiver)
+@receiver(pizza_ordered)
+def pizza_ordered_handler(sender, **kwargs):
     print("Signal handler started.")
-    time.sleep(5)  # Simulate a delay (blocking for 5 seconds)
-    print("Signal handler finished.")
+    time.sleep(10)  # Simulate a delay to show the synchronous behavior
+    order_id = kwargs.get('order_id')
+    print(f"Signal handler finished. Order {order_id} is complete.")
 
-# Simulate saving a user (which triggers the signal)
-def create_user():
-    print("Creating user...")
-    user = User(username="test_user")
-    user.save()  # This triggers the post_save signal
-    print("User created.")
+# Step 3: Define the view that sends the signal
+# this view is invoked when user goes to the url /order-pizza
+def order_pizza(request):
+    start_time = time.time()  # Start timing to measure total time
 
-if __name__ == "__main__":
-    create_user()
+    print("Placing pizza order...")
 
-"""Output Explanation:
+    # Send the custom signal (this will trigger the handler synchronously)
+    pizza_ordered.send(sender=None, order_id=randint(1,1000))
 
-    When create_user() is called, it saves the user and triggers the post_save signal.
-    The signal handler my_signal_handler runs synchronously, causing the entire process to block for 5 seconds before printing "User created.""""
+    end_time = time.time()  # Stop timing after the signal handler finishes
+
+    total_time = end_time - start_time
+    return HttpResponse(f"Pizza order completed in {total_time:.2f} seconds.")
+
+
+# urls.py file
+
+urlpatterns = [
+    path('order-pizza/', order_pizza),
+]
 
 
 
-Question 2: Do Django signals run in the same thread as the caller?
+"""
+Output Explanation:
 
-Answer: Yes, Django signals run in the same thread as the caller by default. This means that the signal handlers execute in the same thread that triggered the signal.
-Code Snippet:
+    when order-pizza function is invoked fromt the browser
+    custom signal pizza_ordered will be created by the signla handler pizza_ordered_handler
+    the order-pizza view will have to wait for the signal handler to finish then only httpResponse will be returned
+    as this runs asynchronously
+
+so output should be
+    Placing pizza order...
+    Signal handler started.
+    < time.sleep for 10s >
+    Signal handler finished. Order <order_id> is complete.
+    < HttpResponse(f"Pizza order completed in {total_time:.2f} seconds.") >
+
+    
+""""
+
+
+
+"""
+Question 2: 
+    Do Django signals run in the same thread as the caller?
+
+Answer: 
+    Yes, Django signals run in the same thread as the caller by default. This means that the signal handlers execute in the 
+    same thread that triggered the signal.
+
 
 Here’s an example that demonstrates this:
 
-python
+"""
 
 import threading
 from django.db.models.signals import post_save
