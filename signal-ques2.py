@@ -18,6 +18,7 @@ import time
 import threading
 from django.http import HttpResponse
 from django.dispatch import Signal, receiver
+from random import randint
 
 # Step 1: Define the custom signal
 pizza_ordered = Signal()
@@ -43,7 +44,7 @@ def order_pizza(request):
     start_time = time.time()  # Start timing to measure total time
 
     # Send the custom signal (this will trigger the handler synchronously in the same thread)
-    pizza_ordered.send(sender=None, order_id=1234)
+    pizza_ordered.send(sender=None, order_id=randint(0,1000))
 
     end_time = time.time()  # Stop timing after the signal handler finishes
 
